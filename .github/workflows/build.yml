@@ -1,0 +1,70 @@
+name: Build binaries
+
+on:
+  push:
+    branches: [ "main" ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    env:
+      CARGO_TERM_COLOR: always
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        build:
+        - linux-arm
+        - linux-intel
+        - macos-arm
+        - macos-intel
+        - windows
+        include:
+        - build: linux-intel
+          os: ubuntu-latest
+          target: x86_64-unknown-linux-gnu
+          binary: libyara_x_capi.so
+        - build: linux-arm
+          os: ubuntu-24.04-arm
+          target: aarch64-unknown-linux-gnu
+          binary: libyara_x_capi.so
+        - build: macos-intel
+          os: macos-latest
+          target: x86_64-apple-darwin
+          binary: libyara_x_capi.dylib
+        - build: macos-arm
+          os: macos-latest
+          target: aarch64-apple-darwin
+          binary: libyara_x_capi.dylib
+        - build: windows
+          os: windows-latest
+          target: x86_64-pc-windows-msvc
+          binary: yara_x_capi.dll
+  
+    steps:
+      - name: Checkout sources
+        shell: bash
+        run: |
+          curl -L https://github.com/VirusTotal/yara-x/archive/refs/tags/v1.12.0.zip --output release.zip
+          unzip release.zip
+          mv yara-x-* yara-x
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: stable
+      - name: Install dependencies
+        shell: bash
+        run: |
+          if [ "${{ matrix.target }}" = "x86_64-apple-darwin" ]; then
+            rustup target add x86_64-apple-darwin
+          fi
+      - name: Build library
+        shell: bash
+        run: |
+          cd yara-x
+          cargo build -p yara-x-capi --release --target ${{ matrix.target }}
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v6
+        with:
+          name: capi-${{ matrix.target }}
+          path: yara-x/target/${{ matrix.target }}/release/${{ matrix.binary }}
