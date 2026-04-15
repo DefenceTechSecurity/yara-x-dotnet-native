@@ -45,7 +45,7 @@ jobs:
       - name: Checkout sources
         shell: bash
         run: |
-          curl -L https://github.com/VirusTotal/yara-x/archive/refs/tags/v1.12.0.zip --output release.zip
+          curl -L https://github.com/VirusTotal/yara-x/archive/refs/tags/v1.15.0.zip --output release.zip
           unzip release.zip
           mv yara-x-* yara-x
       - name: Install Rust toolchain
